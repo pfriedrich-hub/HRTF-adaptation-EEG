@@ -52,11 +52,12 @@ def familiarization_test(subject_id, data_dir, condition, repetitions):
         probe.wait_to_finish_playing()
         interval.play()
 
-    #5% of trials, tone after the inter-stimulus interval and localization
-    if math.random() <= 0.05:
-        probe.play()
-    if seq.this_n > 0:
+    # 5% of trials, tone after the inter-stimulus interval and localization
+    from random import randint
 
+    x = [randint(0, 239) for p in range(0, 239)]
+    if x <= 0.05:
+        probe.play()
     with slab.key() as key:  # wait for a key press
       response = key.getch()
 
