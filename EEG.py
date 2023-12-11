@@ -1,4 +1,5 @@
 import random
+import math
 import freefield
 import slab
 import numpy
@@ -52,7 +53,8 @@ def familiarization_test(subject_id, data_dir, condition, repetitions):
         interval.play()
 
     #5% of trials, tone after the inter-stimulus interval and localization
-
+    if math.random() <= 0.05:
+        probe.play()
     if seq.this_n > 0:
 
     with slab.key() as key:  # wait for a key press
