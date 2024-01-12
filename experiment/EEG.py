@@ -25,7 +25,7 @@ def familiarization_test(subject_id, data_dir, condition, repetitions):
     global speakers, stim, sensor, tone, file_name
     if not freefield.PROCESSORS.mode:
         freefield.initialize('dome', default='play_rec', sensor_tracking=True)
-    freefield.load_equalization(Path.cwd() / 'data' / 'calibration' / 'calibration_dome_23.05')
+    freefield.load_equalization(Path.cwd() / 'data' / 'calibration' / 'calibration_dome_23.05.pkl')
 
     # generate stimulus
     bell = slab.Sound.read(Path.cwd() / 'data' / 'sounds' / 'bell.wav')

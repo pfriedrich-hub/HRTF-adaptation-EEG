@@ -6,13 +6,14 @@ import datetime
 date = datetime.datetime.now()
 from matplotlib import pyplot as plt
 from pathlib import Path
-from analysis.localization_analysis import localization_accuracy
+from analysis.plotting.localization_plot import localization_accuracy
+
 fs = 48828
 slab.set_default_samplerate(fs)
 #test
-subject_id = 'mh'
-condition = 'Ears Free'
-data_dir = Path.cwd() / 'data' / 'experiment' / 'bracket_4' / subject_id / condition
+subject_id = 'Carsten'
+condition = 'Ears molds'
+data_dir = Path.cwd() / 'data' / 'experiment' / subject_id / condition
 
 repetitions = 3  # number of repetitions per speaker
 
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     axis.set_title(file_name)
     (data_dir / 'images').mkdir(parents=True, exist_ok=True)  # create subject image directory
     fig.savefig(data_dir / 'images' / str(file_name + '.png'), format='png')  # save image
-    elevation_gain, ele_rmse, ele_var, az_rmse, az_var = localization_accuracy(sequence, show=True, plot_dim=1)
+    # elevation_gain, ele_rmse, ele_var, az_rmse, az_var = localization_accuracy(sequence, show=True, plot_dim=1)
     print('gain: %.2f\nrmse: %.2f\nsd: %.2f' % (elevation_gain, ele_rmse, ele_var))
 
 
