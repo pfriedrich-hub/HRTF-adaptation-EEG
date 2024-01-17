@@ -12,8 +12,8 @@ fs = 48828
 slab.set_default_samplerate(fs)
 #test
 subject_id = 'Carsten'
-condition = 'Ears molds'
-data_dir = Path.cwd() / 'data' / 'experiment' / subject_id / condition
+condition = 'Earmolds'
+data_dir = Path.cwd() / 'data' / 'experiment' / 'localization' / subject_id / condition
 
 repetitions = 3  # number of repetitions per speaker
 
@@ -117,9 +117,10 @@ if __name__ == "__main__":
 """
 import slab
 from pathlib import Path
-from analysis.localization_analysis import localization_accuracy
+from analysis.plotting.localization_plot import localization_accuracy
 
-file_name = 'localization_lw_ears_free_10.12'
+
+file_name = 'localization_Carsten_Ears molds_17.01'
 
 for path in Path.cwd().glob("**/"+str(file_name)):
     file_path = path
@@ -134,6 +135,7 @@ elevation_gain, ele_rmse, ele_var, az_rmse, az_var = localization_accuracy(seque
 axis.set_xlabel('Response Azimuth (degrees)')
 axis.set_ylabel('Response Elevation (degrees)')
 fig.suptitle(file_name)
+
 """
 
 
