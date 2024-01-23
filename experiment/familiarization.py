@@ -15,29 +15,28 @@ data_dir = Path.cwd() / 'data'
 # initial test
 subject_id = '1'
 condition = 'Ears Free'
-subject_dir = data_dir / 'Experiments' / 'familiarization' / subject_id / condition
+subject_dir = data_dir / 'experiment' / 'familiarization' / subject_id / condition
 
 repetitions = 6  # number of repetitions per speaker
 target_speakers = (19, 21, 23, 25, 27)
 
 def familiarization_test(target_speakers, repetitions, subject_dir):
-    global probe_duration, sequence, tone
+    global sequence, tone, probes, adapters
     proc_list = [['RX81', 'RX8', data_dir / 'rcx' / 'play_adapter_probe.rcx'],
                  ['RX82', 'RX8', data_dir / 'rcx' / 'play_adapter_probe.rcx'],
                  ['RP2', 'RP2', data_dir / 'rcx' / 'button.rcx']]
     freefield.initialize('dome', device=proc_list, sensor_tracking=True)
     # todo create a good calibration file
 
-    # generate random sequence of target speakers
-    sequence = slab.Trialsequence(conditions=target_speakers, n_reps=repetitions, kind='non_repeating')
 
     # --- generate sounds ---- #
     # adapter
-    # generate and write adapter
+    # generate adapter
     adapter_duration = 1.0
-    adapter = slab.Sound.pinknoise(duration=adapter_duration)  # playing from headphones
-    freefield.write(tag='n_adapter', value=adapter.n_samples, processors='RX82') # write the samplesize of the adapter to the processor
-    freefield.write(tag='data_adapter', value=adapter.data, processors='RX82') # write the adapter to the processor
+    adapter_n_samples = int(adapter_duration*samplerate)
+    adapters = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration), n=20)
+    freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RX82') # write the samplesize of the adapter to the processor
+    # freefield.write(tag='data_adapter', value=adapter.data, processors='RX82') # write the adapter to the processor
     # set adapter speakers
     adapter_speaker_ids = [0, 42]
     adapter_speakers = freefield.pick_speakers(adapter_speaker_ids)
@@ -47,15 +46,25 @@ def familiarization_test(target_speakers, repetitions, subject_dir):
     # probe
     probe_duration = 0.1
     probe_n_samples = int(numpy.round(probe_duration * samplerate))
+    probes = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=probe_duration), n=20)
     # set probe buffer parameters
     freefield.write(tag='n_probe', value=probe_n_samples, processors='RX81')
     # probe-adapter-cross-fading
-    probe_onset = adapter.n_samples - int(0.005 * samplerate)  # delay of probe vs adapter
+    probe_onset = adapter_n_samples - int(0.005 * samplerate)  # delay of probe vs adapter
     freefield.write(tag='probe_onset', value=probe_onset, processors='RX81')
 
+    # signal tone
     tone = slab.Sound.tone(frequency=1000, duration=0.25, level=70)
+    freefield.write(tag='n_tone', value=tone.n_samples, processors='RX81')
+    freefield.write(tag='data_tone', value=tone.data, processors='RX81')
 
-    # todo create 2 lists of n adapter and probe sounds
+    input("Press Enter to start.")
+
+    # create subject folder
+    subject_dir.mkdir(parents=True, exist_ok=True)  # create subject data directory if it doesnt exist
+    # generate random sequence of target speakers
+    sequence = slab.Trialsequence(conditions=target_speakers, n_reps=repetitions, kind='non_repeating')
+
 
     for target_speaker_id in sequence:
         sequence.add_response(play_trial(target_speaker_id))
@@ -66,25 +75,28 @@ def familiarization_test(target_speakers, repetitions, subject_dir):
 
 def play_trial(target_speaker_id):
     # generate and write probe
-    probe = slab.Sound.pinknoise(duration=probe_duration)
-    #todo get random adapter and probe from the respective lists and write to processor
+    probe = random.choice(probes)
+    adapter = random.choice(adapters)
+
     # write probe and adapter
     freefield.write(tag='data_probe', value=probe.data, processors='RX81')
+    freefield.write(tag='data_adapter', value=adapter.data, processors='RX82')
+
+    # set probe speaker
     [probe_speaker] = freefield.pick_speakers(target_speaker_id)
     freefield.write(tag='probe_ch', value=probe_speaker.analog_channel, processors=probe_speaker.analog_proc)
 
-    time.sleep(10)
-    # get head pose offset
+    # -- get head pose offset --- #
     freefield.calibrate_sensor()
-
     # play adaptor and probe
     freefield.play()
     # activate led
-    if sequence.this_n < 15:
-        while not freefield.read('playback', 'RX81') == 1:
+    if sequence.this_n < 15: # make sure the light is only activated for the first 15 trials
+        while not freefield.read('playback', 'RX81') == 1:  # wait until probe onset
             time.sleep(0.01)
         freefield.write('bitmask', value=probe_speaker.digital_channel, processors='RX81')
-        freefield.wait_to_finish_playing()
+        # freefield.wait_to_finish_playing()
+        time.sleep(.5)
         freefield.write('bitmask', value=0, processors='RX81')
         # todo make sure the light is on for an adequate amount of time
     # get headpose with a button response
@@ -98,14 +110,8 @@ def play_trial(target_speaker_id):
         response = freefield.read('response', processor='RP2')
     if all(pose):
         print('Response| azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]))
-    freefield.set_signal_and_speaker(signal=tone, speaker=23)
-    freefield.play()
-    freefield.wait_to_finish_playing()
-    # response
-    freefield.wait_for_button()
-
-    # isi
-    time.sleep(0.5)
+    freefield.play('zBusB')
+    time.sleep(0.25)  # wait until the tone has played
     return numpy.array((pose, (probe_speaker.azimuth, probe_speaker.elevation)))
 
 
