@@ -11,7 +11,7 @@ from analysis.plotting.localization_plot import localization_accuracy
 fs = 48828
 slab.set_default_samplerate(fs)
 #test
-subject_id = 'Carsten'
+subject_id = 'Alex'
 condition = 'Earmolds'
 data_dir = Path.cwd() / 'data' / 'experiment' / 'localization' / subject_id / condition
 

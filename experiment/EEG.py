@@ -5,7 +5,8 @@ import numpy
 import time
 import datetime
 date = datetime.datetime.now()
-from random import randint
+# import matplotlib
+# matplotlib.use('GTK3Agg')
 from matplotlib import pyplot as plt
 from pathlib import Path
 
@@ -16,57 +17,113 @@ data_dir = Path.cwd() / 'data'
 # initial test
 subject_id = '1'
 condition = 'Ears Free'
-subject_dir = data_dir / 'Experiments' / 'EEG' / subject_id / condition
+subject_dir = data_dir / 'experiment' / 'EEG' / subject_id / condition
 
-repetitions = 3  # number of repetitions per speaker
+repetitions = 60  # number of repetitions per speaker
+n_blocks = 1
 target_speakers = (20, 22, 24, 26)
 
+def eeg_test(target_speakers, repetitions, subject_dir):
+    global sequence, tone, probes, adapters, response_trials
+    proc_list = [['RX81', 'RX8', data_dir / 'rcx' / 'play_probe.rcx'],
+                 ['RX82', 'RX8', data_dir / 'rcx' / 'play_probe.rcx'],
+                 ['RP2', 'RP2', data_dir / 'rcx' / 'play_adapter.rcx']]
+    freefield.initialize('dome', device=proc_list, sensor_tracking=True)
+    # todo create a good calibration file
 
 
-def familiarization_test(subject_id, data_dir, condition, repetitions):
-    global speakers, stim, sensor, tone, file_name
-    if not freefield.PROCESSORS.mode:
-        freefield.initialize('dome', default='play_rec', sensor_tracking=True)
-    freefield.load_equalization(Path.cwd() / 'data' / 'calibration' / 'calibration_dome_23.05.pkl')
+    # --- generate sounds ---- #
+    # adapter
+    # generate adapter
+    adapter_duration = 1.0
+    adapter_n_samples = int(adapter_duration*samplerate)
+    adapters = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration), n=20)
+    freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RP2')  # write the samplesize of the adapter to the processor
 
-    # generate stimulus
-    bell = slab.Sound.read(Path.cwd() / 'data' / 'sounds' / 'bell.wav')
-    bell.level = 75
+    # probe
+    probe_duration = 0.1
+    probe_n_samples = int(numpy.round(probe_duration * samplerate))
+    probes = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=probe_duration), n=20)
+    # set probe buffer parameters
+    freefield.write(tag='n_probe', value=probe_n_samples, processors='RX81')
+    # probe-adapter-cross-fading
+    probe_onset = adapter_n_samples - int(0.005 * samplerate)  # delay of probe vs adapter
+    freefield.write(tag='probe_onset', value=probe_onset, processors='RX81')
+
+    # signal tone
     tone = slab.Sound.tone(frequency=1000, duration=0.25, level=70)
-    adapter = slab.Sound.pinknoise(duration=1)   #playing from headphones
-    probe = slab.Sound.pinknoise(duration=0.1, kind='non_repeating')
-    probe = probe.ramp(duration=0.005, when='both')
-    interval = slab.Sound.silence(duration=0.35)
+    freefield.write(tag='n_tone', value=tone.n_samples, processors='RX81')
+    freefield.write(tag='data_tone', value=tone.data, processors='RX81')
 
-    channels = (20, 22, 24, 26)
-    #playing adapter from headphones
-    trial_seq = slab.Trialsequence(conditions=channels, n_reps=60, trials=None, kind='non_repeating')
-    speaker_1 = list(20, 26)
-    speaker_1 = slab.Trialsequence(conditions=speaker_1, n_reps=60, trials=None, kind='non_repeating')
-    if speaker_1 == 20:
-        channel = 22, 24, 26
-        probe.play()
-        probe.wait_to_finish_playing()
-        interval.play()
-    else:
-        channels = 20, 22, 24
-        probe.play()
-        probe.wait_to_finish_playing()
-        interval.play()
+    input("Press Enter to start.")
 
-    # 5% of trials, tone after the inter-stimulus interval and localization
-    x = [randint(0, 239) for p in range(0, 239)]
-    if x <= 0.05:
-        probe.play()
-    with slab.key() as key:  # wait for a key press
-      response = key.getch()
+    # create subject folder
+    subject_dir.mkdir(parents=True, exist_ok=True)  # create subject data directory if it doesnt exist
+
+    for block in range(n_blocks):
+        freefield.write('bitmask', value=8, processors='RX81')  # turn on LED
+
+        # get trial indices for response trials
+        n_trials = int(repetitions * len(target_speakers))
+        n_response_trials = int(n_trials * 0.05)
+        response_trials = []
+        for i in range(n_response_trials):
+            temp = [0] * int(n_trials / n_response_trials)
+            temp[numpy.random.randint(2, n_response_trials-2)] = 1
+            response_trials.extend(temp)
+        response_trials = numpy.where(numpy.asarray(response_trials) == 1)[0]
+        # generate random sequence of target speakers
+        sequence = slab.Trialsequence(conditions=target_speakers, n_reps=repetitions, kind='non_repeating')
+
+        # play trial sequence
+        for target_speaker_id in sequence:
+            sequence.add_response(play_trial(target_speaker_id))  # play trial
+            sequence.save_pickle(subject_dir / str('familiarization' + date.strftime('_%d.%m')), clobber=True)    # save trialsequence
+        freefield.write('bitmask', value=0, processors='RX81')  # turn off LED
+        input("Press Enter to start the next Block.")
+    return
+
+def play_trial(target_speaker_id):
+    # generate and write probe
+    probe = random.choice(probes)
+    adapter = random.choice(adapters)
+    # get probe speaker
+    [probe_speaker] = freefield.pick_speakers(target_speaker_id)
+    # write probe and adapter data
+    freefield.write(tag='data_probe', value=probe.data, processors=probe_speaker.analog_proc)
+    freefield.write(tag='data_adapter', value=adapter.data, processors='RP2')
+    # set probe channel
+    freefield.write(tag='probe_ch', value=probe_speaker.analog_channel, processors=probe_speaker.analog_proc)
+    # set eeg marker to current target speaker ID
+    freefield.write('eeg marker', value=target_speaker_id, processors='RX82')
+
+    # play adaptor and probe
+    freefield.play()
+    time.sleep(0.9 - 0.195)  # account for the time it needs to write data to the processor
+    pose = (None, None)
+    if sequence.this_n in response_trials.tolist():
+        freefield.play('zBusB')  # play tone
+        # -- get head pose offset --- #
+        freefield.calibrate_sensor(led_feedback=True)
+        # get headpose with a button response
+        time.sleep(0.25)
+        response = 0
+        while not response:
+            pose = freefield.get_head_pose(method='sensor')
+            if all(pose):
+                print('head pose: azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]), end="\r", flush=True)
+            else:
+                print('no head pose detected', end="\r", flush=True)
+            response = freefield.read('response', processor='RP2')
+        if all(pose):
+            print('Response| azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]))
+        freefield.play('zBusB')
+        freefield.write('bitmask', value=8, processors='RX81')  # turn on LED
+        time.sleep(0.25)  # wait until the tone has played
+        freefield.wait_for_button()
+    return numpy.array((pose, (probe_speaker.azimuth, probe_speaker.elevation)))
 
 
-# loop over trials
-    data_dir.mkdir(parents=True, exist_ok=True)  # create subject data directory if it doesnt exist
-    file_name = 'localization_' + subject_id + '_' + condition + date.strftime('_%d.%m')
-    counter = 1
-    while Path.exists(data_dir / file_name):
-        file_name = 'localization_' + subject_id + '_' + condition + date.strftime('_%d.%m') + '_' + str(counter)
-        counter += 1
+if __name__ == "__main__":
+    eeg_test(target_speakers, repetitions, subject_dir)
 

@@ -35,13 +35,8 @@ def familiarization_test(target_speakers, repetitions, subject_dir):
     adapter_duration = 1.0
     adapter_n_samples = int(adapter_duration*samplerate)
     adapters = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration), n=20)
-    freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RX82') # write the samplesize of the adapter to the processor
+    freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RP2') # write the samplesize of the adapter to the processor
     # freefield.write(tag='data_adapter', value=adapter.data, processors='RX82') # write the adapter to the processor
-    # set adapter speakers
-    adapter_speaker_ids = [0, 42]
-    adapter_speakers = freefield.pick_speakers(adapter_speaker_ids)
-    freefield.write(tag='adapter_ch_1', value=adapter_speakers[0].analog_channel, processors='RX82')
-    freefield.write(tag='adapter_ch_2', value=adapter_speakers[1].analog_channel, processors='RX82')
 
     # probe
     probe_duration = 0.1
@@ -80,7 +75,7 @@ def play_trial(target_speaker_id):
 
     # write probe and adapter
     freefield.write(tag='data_probe', value=probe.data, processors='RX81')
-    freefield.write(tag='data_adapter', value=adapter.data, processors='RX82')
+    freefield.write(tag='data_adapter', value=adapter.data, processors='RP2')
 
     # set probe speaker
     [probe_speaker] = freefield.pick_speakers(target_speaker_id)
