@@ -22,6 +22,8 @@ subject_dir = data_dir / 'experiment' / 'EEG' / subject_id / condition
 repetitions = 60  # number of repetitions per speaker
 n_blocks = 1
 target_speakers = (20, 22, 24, 26)
+probe_level = 85
+adapter_level = 85
 
 def eeg_test(target_speakers, repetitions, subject_dir):
     global sequence, tone, probes, adapters, response_trials
@@ -31,19 +33,18 @@ def eeg_test(target_speakers, repetitions, subject_dir):
     freefield.initialize('dome', device=proc_list, sensor_tracking=True)
     # todo create a good calibration file
 
-
     # --- generate sounds ---- #
     # adapter
     # generate adapter
     adapter_duration = 1.0
     adapter_n_samples = int(adapter_duration*samplerate)
-    adapters = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration), n=20)
+    adapters = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration, level=adapter_level), n=20)
     freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RP2')  # write the samplesize of the adapter to the processor
 
     # probe
     probe_duration = 0.1
     probe_n_samples = int(numpy.round(probe_duration * samplerate))
-    probes = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=probe_duration), n=20)
+    probes = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=probe_duration, level=probe_level), n=20)
     # set probe buffer parameters
     freefield.write(tag='n_probe', value=probe_n_samples, processors='RX81')
     # probe-adapter-cross-fading
@@ -54,8 +55,10 @@ def eeg_test(target_speakers, repetitions, subject_dir):
     tone = slab.Sound.tone(frequency=1000, duration=0.25, level=70)
     freefield.write(tag='n_tone', value=tone.n_samples, processors='RX81')
     freefield.write(tag='data_tone', value=tone.data, processors='RX81')
+    freefield.write(tag='ch_tone', value=23, processors='RX81')
 
     input("Press Enter to start.")
+
 
     # create subject folder
     subject_dir.mkdir(parents=True, exist_ok=True)  # create subject data directory if it doesnt exist
@@ -102,9 +105,9 @@ def play_trial(target_speaker_id):
     time.sleep(0.9 - 0.195)  # account for the time it needs to write data to the processor
     pose = (None, None)
     if sequence.this_n in response_trials.tolist():
-        freefield.play('zBusB')  # play tone
+        freefield.play('zBusB')  # play tone  #todo tone doesnt play
         # -- get head pose offset --- #
-        freefield.calibrate_sensor(led_feedback=True)
+        freefield.calibrate_sensor(led_feedback=True, button_control=False)
         # get headpose with a button response
         time.sleep(0.25)
         response = 0
