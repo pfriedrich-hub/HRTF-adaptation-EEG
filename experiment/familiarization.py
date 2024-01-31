@@ -19,22 +19,23 @@ subject_dir = data_dir / 'experiment' / 'familiarization' / subject_id / conditi
 
 repetitions = 6  # number of repetitions per speaker
 target_speakers = (19, 21, 23, 25, 27)
+adapter_levels = (44, 49)  # calibrated adapter levels, left first
 
 def familiarization_test(target_speakers, repetitions, subject_dir):
-    global sequence, tone, probes, adapters
-    proc_list = [['RX81', 'RX8', data_dir / 'rcx' / 'play_adapter_probe.rcx'],
-                 ['RX82', 'RX8', data_dir / 'rcx' / 'play_adapter_probe.rcx'],
-                 ['RP2', 'RP2', data_dir / 'rcx' / 'button.rcx']]
+    global sequence, tone, probes, adapters_l, adapters_r
+    proc_list = [['RX81', 'RX8', data_dir / 'rcx' / 'play_probe.rcx'],
+                 ['RX82', 'RX8', data_dir / 'rcx' / 'play_probe.rcx'],
+                 ['RP2', 'RP2', data_dir / 'rcx' / 'play_rec_adapter.rcx']]
     freefield.initialize('dome', device=proc_list, sensor_tracking=True)
     # todo create a good calibration file
-
 
     # --- generate sounds ---- #
     # adapter
     # generate adapter
     adapter_duration = 1.0
     adapter_n_samples = int(adapter_duration*samplerate)
-    adapters = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration), n=20)
+    adapters_l = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration, level=adapter_levels[0]), n=20)
+    adapters_r = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration, level=adapter_levels[1]), n=20)
     freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RP2') # write the samplesize of the adapter to the processor
     # freefield.write(tag='data_adapter', value=adapter.data, processors='RX82') # write the adapter to the processor
 
@@ -71,11 +72,13 @@ def familiarization_test(target_speakers, repetitions, subject_dir):
 def play_trial(target_speaker_id):
     # generate and write probe
     probe = random.choice(probes)
-    adapter = random.choice(adapters)
+    adapter_l = random.choice(adapters_l)
+    adapter_r = random.choice(adapters_r)
 
     # write probe and adapter
     freefield.write(tag='data_probe', value=probe.data, processors='RX81')
-    freefield.write(tag='data_adapter', value=adapter.data, processors='RP2')
+    freefield.write(tag='data_adapter_l', value=adapter_l.data, processors='RP2')
+    freefield.write(tag='data_adapter_r', value=adapter_r.data, processors='RP2')
 
     # set probe speaker
     [probe_speaker] = freefield.pick_speakers(target_speaker_id)
