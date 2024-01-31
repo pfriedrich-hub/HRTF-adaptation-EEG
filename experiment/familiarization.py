@@ -37,7 +37,8 @@ def familiarization_test(target_speakers, repetitions, subject_dir):
     adapters_l = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration, level=adapter_levels[0]), n=20)
     adapters_r = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration, level=adapter_levels[1]), n=20)
     freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RP2') # write the samplesize of the adapter to the processor
-    # freefield.write(tag='data_adapter', value=adapter.data, processors='RX82') # write the adapter to the processor
+    freefield.write(tag='adapter_ch_1', value=1, processors='RP2')
+    freefield.write(tag='adapter_ch_2', value=2, processors='RP2')
 
     # probe
     probe_duration = 0.1
@@ -61,12 +62,10 @@ def familiarization_test(target_speakers, repetitions, subject_dir):
     # generate random sequence of target speakers
     sequence = slab.Trialsequence(conditions=target_speakers, n_reps=repetitions, kind='non_repeating')
 
-
     for target_speaker_id in sequence:
         sequence.add_response(play_trial(target_speaker_id))
         sequence.save_pickle(subject_dir / str('familiarization' + date.strftime('_%d.%m')), clobber=True)
-
-    # save trialsequence
+    freefield.halt()  # disconnect sensor and processors
     return
 
 def play_trial(target_speaker_id):
@@ -85,7 +84,7 @@ def play_trial(target_speaker_id):
     freefield.write(tag='probe_ch', value=probe_speaker.analog_channel, processors=probe_speaker.analog_proc)
 
     # -- get head pose offset --- #
-    freefield.calibrate_sensor()
+    freefield.calibrate_sensor(led_feedback=True, button_control=True)
     # play adaptor and probe
     freefield.play()
     # activate led
@@ -110,56 +109,10 @@ def play_trial(target_speaker_id):
         print('Response| azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]))
     freefield.play('zBusB')
     time.sleep(0.25)  # wait until the tone has played
+    print(f'{sequence.this_n}')
     return numpy.array((pose, (probe_speaker.azimuth, probe_speaker.elevation)))
 
 
 
 if __name__ == "__main__":
     familiarization_test(target_speakers, repetitions, subject_dir)
-
-
-
-
-
-
-
-    #
-    # # freefield.load_equalization(Path.cwd() / 'data' / 'calibration' / 'calibration_dome_23.05.pkl')
-    #
-    # # generate stimulus
-    # bell = slab.Sound.read(Path.cwd() / 'data' / 'sounds' / 'bell.wav')
-    # bell.level = 75
-    # tone = slab.Sound.tone(frequency=1000, duration=0.25, level=70)
-    #
-    #
-    # interval = slab.Sound.silence(duration=0.35)
-    #
-    # stimulus = probe.ramp(duration=0.05, when='both', level=70)
-    # for channels in seq:
-    #     # write channel to rcx
-    #     stimulus.level = probe
-    #     stimulus.play()
-    # with slab.key() as key:
-    #     response = key.getch()
-    #     # get head position
-    # seq.add_response(response)
-    # # first 15 stimuli are accompanied by a visual cue
-    #
-    # stimulus.wait_to_finish_playing()
-    # response = 0
-    # while not response:
-    #     pose = freefield.get_head_pose(method='sensor')
-    #     if all(pose):
-    #         print('head pose: azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]), end="\r", flush=True)
-    #     else:
-    #         print('no head pose detected', end="\r", flush=True)
-    #     response = freefield.read('response', processor='RP2')
-    # if all(pose):
-    #     print('Response| azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]))
-    # freefield.set_signal_and_speaker(signal=tone, speaker=23)
-    # freefield.play()
-    # freefield.wait_to_finish_playing()
-    # return numpy.array((pose, probe))
-#
-# def play_trial(speaker_id):
-#     probe = slab.Sound.pinknoise(duration=0.1)

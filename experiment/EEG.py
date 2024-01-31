@@ -20,10 +20,11 @@ condition = 'Ears Free'
 subject_dir = data_dir / 'experiment' / 'EEG' / subject_id / condition
 
 repetitions = 60  # number of repetitions per speaker
-n_blocks = 1
+n_blocks = 4
 target_speakers = (20, 22, 24, 26)
 probe_level = 75
 adapter_levels = (44, 49)  # calibrated adapter levels, left first
+isi = 1.0  # inter stim interval in seconds
 
 def eeg_test(target_speakers, repetitions, subject_dir):
     global sequence, tone, probes, adapters_l, adapters_r, response_trials
@@ -32,7 +33,7 @@ def eeg_test(target_speakers, repetitions, subject_dir):
                  ['RP2', 'RP2', data_dir / 'rcx' / 'play_rec_adapter.rcx']]
     freefield.initialize('dome', device=proc_list, sensor_tracking=True)
     # todo create a good calibration file
-    freefield.set_logger('debug')
+    freefield.set_logger('error')
     # --- generate sounds ---- #
     # adapter
     # generate adapter
@@ -68,7 +69,6 @@ def eeg_test(target_speakers, repetitions, subject_dir):
 
     for block in range(n_blocks):
         # freefield.write('bitmask', value=8, processors='RX81')  # turn on LED
-
         # get trial indices for response trials
         n_trials = int(repetitions * len(target_speakers))
         n_response_trials = int(n_trials * 0.05)
@@ -84,7 +84,9 @@ def eeg_test(target_speakers, repetitions, subject_dir):
         # play trial sequence
         for target_speaker_id in sequence:
             sequence.add_response(play_trial(target_speaker_id))  # play trial
-            sequence.save_pickle(subject_dir / str('familiarization' + date.strftime('_%d.%m')), clobber=True)    # save trialsequence
+            time.sleep(isi - 0.195)  # account for the time it needs to write data to the processor (0.195 seconds)
+            sequence.save_pickle(subject_dir / str(('familiarization' + '_block_%i' + date.strftime('_%d.%m')) % block),
+                                 clobber=True)    # save trialsequence
         # freefield.write('bitmask', value=0, processors='RX81')  # turn off LED
         input("Press Enter to start the next Block.")
     return
@@ -96,20 +98,24 @@ def play_trial(target_speaker_id):
     adapter_r = random.choice(adapters_r)
     # get probe speaker
     [probe_speaker] = freefield.pick_speakers(target_speaker_id)
+
     # write probe and adapter data
     freefield.write(tag='data_probe', value=probe.data, processors=probe_speaker.analog_proc)
     freefield.write(tag='data_adapter_l', value=adapter_l.data, processors='RP2')
     freefield.write(tag='data_adapter_r', value=adapter_r.data, processors='RP2')
+
     # set probe channel
     freefield.write(tag='probe_ch', value=probe_speaker.analog_channel, processors=probe_speaker.analog_proc)
+
     # set eeg marker to current target speaker ID
     freefield.write('eeg marker', value=target_speaker_id, processors='RX82')
 
     # play adaptor and probe
     freefield.play()
-    time.sleep(0.9 - 0.195)  # account for the time it needs to write data to the processor
+    time.sleep(1.1)  # wait for the stimuli to finish playing
     pose = (None, None)
     if sequence.this_n in response_trials.tolist():
+        freefield.set_logger('error')
         freefield.play('zBusB')  # play tone
         # -- get head pose offset --- #
         freefield.calibrate_sensor(led_feedback=False, button_control=False)
@@ -129,9 +135,36 @@ def play_trial(target_speaker_id):
         # freefield.write('bitmask', value=8, processors='RX81')  # turn on LED
         time.sleep(0.25)  # wait until the tone has played
         freefield.wait_for_button()
+        freefield.set_logger('debug')
+    print(sequence.this_n)
     return numpy.array((pose, (probe_speaker.azimuth, probe_speaker.elevation)))
-
 
 if __name__ == "__main__":
     eeg_test(target_speakers, repetitions, subject_dir)
+    freefield.halt()
 
+
+
+""" test localization file
+
+import slab
+from pathlib import Path
+from analysis.plotting.localization_plot import localization_accuracy
+
+file_name = 'familiarization_block_0_31.01'
+
+for path in Path.cwd().glob("**/"+str(file_name)):
+    file_path = path
+sequence = slab.Trialsequence(conditions=4, n_reps=60, kind='non_repeating')
+sequence.load_pickle(file_path)
+
+# plot
+from matplotlib import pyplot as plt
+fig, axis = plt.subplots(1, 1)
+elevation_gain, ele_rmse, ele_var, az_rmse, az_var = localization_accuracy(sequence, show=True, plot_dim=2,
+ binned=True, axis=axis)
+axis.set_xlabel('Response Azimuth (degrees)')
+axis.set_ylabel('Response Elevation (degrees)')
+fig.suptitle(file_name)
+
+"""
