@@ -32,7 +32,7 @@ def eeg_test(target_speakers, repetitions, subject_dir):
                  ['RP2', 'RP2', data_dir / 'rcx' / 'play_rec_adapter.rcx']]
     freefield.initialize('dome', device=proc_list, sensor_tracking=True)
     # todo create a good calibration file
-
+    freefield.set_logger('debug')
     # --- generate sounds ---- #
     # adapter
     # generate adapter
