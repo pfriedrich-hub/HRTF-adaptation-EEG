@@ -6,7 +6,7 @@ def localization_accuracy(sequence, show=True, plot_dim=2, binned=True, axis=Non
                           elevation='all', azimuth='all'):
     if sequence.this_n == -1 or sequence.n_remaining == 132 or not sequence.data:
         return numpy.nan, numpy.nan, numpy.nan, numpy.nan, numpy.nan
-    # retrieve data
+    # retrieve RCX_files
     loc_data = numpy.asarray(sequence.data)
     loc_data = loc_data.reshape(loc_data.shape[0], 2, 2)
     targets = loc_data[:, 1]  # [az, ele]

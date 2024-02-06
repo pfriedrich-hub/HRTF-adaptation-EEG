@@ -10,7 +10,7 @@ from pathlib import Path
 
 samplerate = 48828
 slab.set_default_samplerate(samplerate)
-data_dir = Path.cwd() / 'data'
+data_dir = Path.cwd() / 'RCX_files'
 
 
 probe_level = 75
@@ -132,7 +132,7 @@ def test_calibration(adapter_level_l, adapter_level_r, probe_level):
     freefield.write(tag='adapter_ch_2', value=2, processors='RP2')
     freefield.play()
     time.sleep(1.1)
-    # get recording data
+    # get recording RCX_files
     rec_l = freefield.read('datal', 'RP2', n_rec)
     rec_r = freefield.read('datar', 'RP2', n_rec)
     recs = [rec_l, rec_r]

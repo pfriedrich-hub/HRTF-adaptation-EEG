@@ -17,6 +17,7 @@ subject_id = '1'
 condition = 'Ears Free'
 subject_dir = data_dir / 'experiment' / 'familiarization' / subject_id / condition
 
+
 repetitions = 6  # number of repetitions per speaker
 target_speakers = (19, 21, 23, 25, 27)
 adapter_levels = (44, 49)  # calibrated adapter levels, left first
@@ -58,7 +59,7 @@ def familiarization_test(target_speakers, repetitions, subject_dir):
     input("Press Enter to start.")
 
     # create subject folder
-    subject_dir.mkdir(parents=True, exist_ok=True)  # create subject data directory if it doesnt exist
+    subject_dir.mkdir(parents=True, exist_ok=True)  # create subject RCX_files directory if it doesnt exist
     # generate random sequence of target speakers
     sequence = slab.Trialsequence(conditions=target_speakers, n_reps=repetitions, kind='non_repeating')
 

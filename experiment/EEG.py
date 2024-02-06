@@ -65,7 +65,7 @@ def eeg_test(target_speakers, repetitions, subject_dir):
     input("Press Enter to start.")
 
     # create subject folder
-    subject_dir.mkdir(parents=True, exist_ok=True)  # create subject data directory if it doesnt exist
+    subject_dir.mkdir(parents=True, exist_ok=True)  # create subject RCX_files directory if it doesnt exist
 
     for block in range(n_blocks):
         # freefield.write('bitmask', value=8, processors='RX81')  # turn on LED
@@ -84,7 +84,7 @@ def eeg_test(target_speakers, repetitions, subject_dir):
         # play trial sequence
         for target_speaker_id in sequence:
             sequence.add_response(play_trial(target_speaker_id))  # play trial
-            time.sleep(isi - 0.195)  # account for the time it needs to write data to the processor (0.195 seconds)
+            time.sleep(isi - 0.195)  # account for the time it needs to write RCX_files to the processor (0.195 seconds)
             sequence.save_pickle(subject_dir / str(('familiarization' + '_block_%i' + date.strftime('_%d.%m')) % block),
                                  clobber=True)    # save trialsequence
         # freefield.write('bitmask', value=0, processors='RX81')  # turn off LED
@@ -99,7 +99,7 @@ def play_trial(target_speaker_id):
     # get probe speaker
     [probe_speaker] = freefield.pick_speakers(target_speaker_id)
 
-    # write probe and adapter data
+    # write probe and adapter RCX_files
     freefield.write(tag='data_probe', value=probe.data, processors=probe_speaker.analog_proc)
     freefield.write(tag='data_adapter_l', value=adapter_l.data, processors='RP2')
     freefield.write(tag='data_adapter_r', value=adapter_r.data, processors='RP2')

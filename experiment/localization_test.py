@@ -11,8 +11,8 @@ from analysis.plotting.localization_plot import localization_accuracy
 fs = 48828
 slab.set_default_samplerate(fs)
 #test
-subject_id = 'Alex'
-condition = 'Earmolds'
+subject_id = 'test elli'
+condition = 'Ears free'
 data_dir = Path.cwd() / 'data' / 'experiment' / 'localization' / subject_id / condition
 
 repetitions = 3  # number of repetitions per speaker
@@ -52,7 +52,7 @@ def localization_test(subject_id, data_dir, condition, repetitions):
             break
     trial_sequence = slab.Trialsequence(trials=range(len(sequence)))
     # loop over trials
-    data_dir.mkdir(parents=True, exist_ok=True)  # create subject data directory if it doesnt exist
+    data_dir.mkdir(parents=True, exist_ok=True)  # create subject RCX_files directory if it doesnt exist
     file_name = 'localization_' + subject_id + '_' + condition + date.strftime('_%d.%m')
     counter = 1
     while Path.exists(data_dir / file_name):
@@ -150,12 +150,12 @@ sequence_1 = slab.Trialsequence(conditions=45, n_reps=1)
 sequence_2 = deepcopy(sequence_1)
 sequence_1.load_pickle(file_name=data_dir / filename_1)
 sequence_2.load_pickle(file_name=data_dir / filename_2)
-data_1 = sequence_1.data[:-sequence_1.n_remaining]
-data_2 = sequence_2.data[:-sequence_2.n_remaining]
-data = data_1 + data_2
+data_1 = sequence_1.RCX_files[:-sequence_1.n_remaining]
+data_2 = sequence_2.RCX_files[:-sequence_2.n_remaining]
+RCX_files = data_1 + data_2
 sequence = sequence_1
 file_name = filename_1
-sequence.data = data
+sequence.RCX_files = RCX_files
 
 #  save
 sequence.save_pickle(data_dir / file_name, clobber=True)
@@ -168,11 +168,11 @@ for path in Path.cwd().glob("**/*"+str(file_name)):
 sequence = slab.Trialsequence(conditions=45, n_reps=1)
 sequence.load_pickle(file_path)
 
-for i, entry in enumerate(sequence.data):
-    sequence.data[i][0][sequence.data[i][0] > 180] -= 360
+for i, entry in enumerate(sequence.RCX_files):
+    sequence.RCX_files[i][0][sequence.RCX_files[i][0] > 180] -= 360
     
-for i, entry in enumerate(sequence.data):
-    sequence.data[i][0][sequence.data[i][0] < -180] += 360
+for i, entry in enumerate(sequence.RCX_files):
+    sequence.RCX_files[i][0][sequence.RCX_files[i][0] < -180] += 360
     
 # -------------- save ------------------#
 
