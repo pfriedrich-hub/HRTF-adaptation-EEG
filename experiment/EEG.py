@@ -15,12 +15,12 @@ slab.set_default_samplerate(samplerate)
 data_dir = Path.cwd() / 'data'
 
 # initial test
-subject_id = '1'
+subject_id = 'Fee'
 condition = 'Ears Free'
 subject_dir = data_dir / 'experiment' / 'EEG' / subject_id / condition
 
 repetitions = 60  # number of repetitions per speaker
-n_blocks = 4
+n_blocks = 6
 target_speakers = (20, 22, 24, 26)
 probe_level = 75
 adapter_levels = (44, 49)  # calibrated adapter levels, left first
@@ -135,7 +135,7 @@ def play_trial(target_speaker_id):
         # freefield.write('bitmask', value=8, processors='RX81')  # turn on LED
         time.sleep(0.25)  # wait until the tone has played
         freefield.wait_for_button()
-        freefield.set_logger('debug')
+        freefield.set_logger('error')
     print(sequence.this_n)
     return numpy.array((pose, (probe_speaker.azimuth, probe_speaker.elevation)))
 

@@ -13,7 +13,7 @@ slab.set_default_samplerate(samplerate)
 data_dir = Path.cwd() / 'data'
 
 # initial test
-subject_id = '1'
+subject_id = 'Fee'
 condition = 'Ears Free'
 subject_dir = data_dir / 'experiment' / 'familiarization' / subject_id / condition
 
