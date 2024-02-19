@@ -52,9 +52,17 @@ def eeg_test(target_speakers, repetitions, subject_dir):
     probes = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=probe_duration, level=probe_level), n=20)
     # set probe buffer parameters
     freefield.write(tag='n_probe', value=probe_n_samples, processors='RX81')
+
     # probe-adapter-cross-fading
-    probe_onset = adapter_n_samples - int(0.005 * samplerate)  # delay of probe vs adapter
-    freefield.write(tag='probe_onset', value=probe_onset, processors='RX81')
+    adapter_ramp_onset = adapter_n_samples - int(0.005 * samplerate)
+    freefield.write(tag='adapter_ramp_onset', value=adapter_ramp_onset, processors='RP2')
+    # delay of probe vs adapter, plus time the sound needs to reach the eardrum
+    sound_travel_delay = int(1.4 / 344 * samplerate)
+    dac_delay_RX8 = 24
+    dac_delay_RP2 = 30
+    dac_delay = dac_delay_RX8 - dac_delay_RP2
+    probe_ramp_onset = adapter_ramp_onset - sound_travel_delay - dac_delay
+    freefield.write(tag='probe_onset', value=probe_ramp_onset, processors='RX81')
 
     # signal tone
     tone = slab.Sound.tone(frequency=1000, duration=0.25, level=70)
