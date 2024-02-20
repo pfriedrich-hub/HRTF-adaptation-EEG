@@ -13,7 +13,7 @@ slab.set_default_samplerate(fs)
 #test
 subject_id = 'Fee'
 condition = 'Ear molds'
-data_dir = Path.cwd() / 'data' / 'experiment' / 'localization' / subject_id / condition
+data_dir = Path.cwd() / 'data' / 'experiment' / 'behavior' / 'localization' / subject_id / condition
 
 repetitions = 3  # number of repetitions per speaker
 

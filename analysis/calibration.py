@@ -97,7 +97,7 @@ def test_calibration(adapter_level_l, adapter_level_r, probe_level, adapter_dura
     n_adapter = int(adapter_duration * samplerate)
 
     # make the adapter a bit longer so the ramp won't get clipped
-    adapter_duration += 0.2
+    adapter_duration += 0.2   # todo find out why this happens
 
     # test time and level calibration with a tone
     probe = slab.Sound.tone(duration=probe_duration, level=probe_level, frequency=4000)  # test recording with a tone

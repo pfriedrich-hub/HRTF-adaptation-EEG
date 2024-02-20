@@ -17,7 +17,7 @@ data_dir = Path.cwd() / 'data'
 # initial test
 subject_id = 'Fee'
 condition = 'Ear molds'
-subject_dir = data_dir / 'experiment' / 'EEG' / subject_id / condition
+subject_dir = data_dir / 'experiment' / 'behavior' / 'EEG' / subject_id / condition
 
 repetitions = 60  # number of repetitions per speaker
 n_blocks = 6
@@ -34,14 +34,13 @@ def eeg_test(target_speakers, repetitions, subject_dir):
     freefield.initialize('dome', device=proc_list, sensor_tracking=True)
     # todo create a good calibration file
     freefield.set_logger('error')
+
     # --- generate sounds ---- #
     # adapter
-    # generate adapter
     adapter_duration = 1.0
     adapter_n_samples = int(adapter_duration*samplerate)
     adapters_l = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration, level=adapter_levels[0]), n=20)
     adapters_r = slab.Precomputed(lambda: slab.Sound.pinknoise(duration=adapter_duration, level=adapter_levels[1]), n=20)
-    # todo ramp probe and adapter
     freefield.write(tag='n_adapter', value=adapter_n_samples, processors='RP2')  # write the samplesize of the adapter to the processor
     freefield.write(tag='adapter_ch_1', value=1, processors='RP2')
     freefield.write(tag='adapter_ch_2', value=2, processors='RP2')

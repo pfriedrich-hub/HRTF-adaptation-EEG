@@ -15,7 +15,7 @@ data_dir = Path.cwd() / 'data'
 # initial test
 subject_id = 'Fee'
 condition = 'Ears Free'
-subject_dir = data_dir / 'experiment' / 'familiarization' / subject_id / condition
+subject_dir = data_dir / 'experiment' / 'behavior' / 'familiarization' / subject_id / condition
 
 
 repetitions = 6  # number of repetitions per speaker
@@ -101,10 +101,8 @@ def play_trial(target_speaker_id):
         while not freefield.read('playback', 'RX81') == 1:  # wait until probe onset
             time.sleep(0.01)
         freefield.write('bitmask', value=probe_speaker.digital_channel, processors='RX81')
-        # freefield.wait_to_finish_playing()
         time.sleep(.5)
         freefield.write('bitmask', value=0, processors='RX81')
-        # todo make sure the light is on for an adequate amount of time
     # get headpose with a button response
     response = 0
     while not response:
@@ -120,7 +118,6 @@ def play_trial(target_speaker_id):
     time.sleep(0.25)  # wait until the tone has played
     print(f'{sequence.this_n}')
     return numpy.array((pose, (probe_speaker.azimuth, probe_speaker.elevation)))
-
 
 
 if __name__ == "__main__":
